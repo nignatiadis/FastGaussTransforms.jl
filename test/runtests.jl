@@ -1,6 +1,11 @@
 using FastGaussTransforms
 using Base.Test
 
+# Evaluate the maximum error for the gauss transform of two sources
+# as one of the sources is moved.
+#
+# Since the gauss transform is linear, this should be a sufficient test
+# of the accuracy of the algorithm in general.
 function maxerror(rtol)
    m = 0.0
    for xp in linspace(-10, 10, 1000)

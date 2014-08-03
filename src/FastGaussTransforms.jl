@@ -18,9 +18,11 @@ end
 function errorconstants(rtol)
   lrtol = log(rtol)
   rx = 0.5
-  ry = sqrt(-log(rtol))
+  ry = iceil(sqrt(-log(rtol)))
   order = 0
-  c = (2/e)*rx*ry
+  # numerical prefactor here is determined empirically. Theory says it should be
+  # 2, but in practice it appears that a smaller number of terms is sufficient.
+  c = 0.5*rx*ry
   error = 1.0
   while rtol<error
     order += 1
@@ -29,8 +31,11 @@ function errorconstants(rtol)
   return rx, ry, order
 end
 
-function fastgausstransform(xs, qs, std; rtol=eps(1.0))
-  rx, ry, order = errorconstants(rtol)
+function fastgausstransform(xs, qs, std; rtol=eps(1.0), order=-1.0, rx=-1.0, ry=-1.0)
+  _rx, _ry, _order = errorconstants(rtol)
+  order < 0.0 && (order = _order)
+  rx < 0.0 && (rx = _rx)
+  ry < 0.0 && (ry = _ry)
   h = sqrt(2)*std
   xmin, xmax = extrema(xs)
   range = xmax - xmin

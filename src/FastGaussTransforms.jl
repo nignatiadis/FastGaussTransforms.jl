@@ -33,13 +33,9 @@ function errorconstants(rtol)
   return rx, ry, order
 end
 
-function fastgausstransform(xs, qs, std; rtol=-1.0, order=-1.0, rx=-1.0, ry=-1.0)
+function fastgausstransform(xs, qs, std; rtol=eps(promote_type(eltype(xs), eltype(qs))))
   T = promote_type(eltype(xs), eltype(qs))
-  rtol < 0 && (rtol = eps(T))
-  _rx, _ry, _order = errorconstants(rtol)
-  order < 0 && (order = _order)
-  rx < 0 && (rx = _rx)
-  ry < 0 && (ry = _ry)
+  rx, ry, order = errorconstants(rtol)
   h = convert(T, sqrt(2)*std)
   xmin, xmax = extrema(xs)
   range = xmax - xmin
@@ -78,8 +74,8 @@ function evaluate{T}(f::FastGaussTransform{T}, x)
   for k in neighborindices(f, x)
     center = f.centers[k]
     t = (x - center)/f.h
-    abs(t) > f.ry && continue
     s = f.coefficients[end, k]
+    # Horner's method
     for n in size(f.coefficients,1)-1:-1:1
       s = f.coefficients[n, k] + t*s
     end

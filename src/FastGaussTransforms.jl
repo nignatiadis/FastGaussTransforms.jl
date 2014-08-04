@@ -43,11 +43,13 @@ function fastgausstransform(xs, qs, std; rtol=-1.0, order=-1.0, rx=-1.0, ry=-1.0
   h = convert(T, sqrt(2)*std)
   xmin, xmax = extrema(xs)
   range = xmax - xmin
-  centers = linspace(xmin, xmax, iceil(range/(2*h*rx)) + 1)
+  centers = T[xmin:(2*h*rx):xmax+2*h*rx]
+  xmin, xmax = extrema(centers)
+  range = xmax - xmin
   ncenters = length(centers)
   coefficients = zeros(T, order + 1, ncenters)
   for (x, q) in zip(xs, qs)
-    k = ncenters == 1 ? 1 : iround(((x-xmin)*ncenters+(xmax-x))/range)
+    k = ncenters == 1 ? 1 : 1 + iround((x - xmin)/(2*h*rx))
     center = centers[k]
     t = (x-center)/h
     c = q*exp(-t^2)
@@ -62,19 +64,26 @@ function fastgausstransform(xs, qs, std; rtol=-1.0, order=-1.0, rx=-1.0, ry=-1.0
   return FastGaussTransform(centers, coefficients, h, ry)
 end
 
-function evaluate{T}(f::FastGaussTransform{T}, x)
-  h = f.h
-  g = zero(T)
-  for (k, center) in enumerate(f.centers)
-    t = (x - center)/h
-    abs(t) > f.ry && continue
+function neighborindices(f::FastGaussTransform, x)
+  centers = f.centers
+  ncenters = length(centers)
+  range = centers[end] - centers[1]
+  imin = (x-f.ry*f.h-centers[1])/range*(ncenters-1) + 1
+  imax = (x+f.ry*f.h-centers[1])/range*(ncenters-1) + 1
+  return max(ifloor(imin), 1):min(iceil(imax), ncenters)
+end
 
+function evaluate{T}(f::FastGaussTransform{T}, x)
+  g = zero(T)
+  for k in neighborindices(f, x)
+    center = f.centers[k]
+    t = (x - center)/f.h
+    abs(t) > f.ry && continue
     s = f.coefficients[end, k]
     for n in size(f.coefficients,1)-1:-1:1
       s = f.coefficients[n, k] + t*s
     end
     g += exp(-t^2)*s
-
   end
   return g
 end

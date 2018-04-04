@@ -2,7 +2,7 @@ module FastGaussTransforms
 
 export fastgausstransform, slowgausstransform, evaluate
 
-type FastGaussTransform{T<:Real}
+struct FastGaussTransform{T<:Real}
   centers::Vector{T} # In general, an array of points
   coefficients::Array{T, 2} # In general, a rank-d tensor for every point
   h::T # sqrt(2)*std
@@ -20,7 +20,7 @@ function errorconstants(rtol)
   half = one(T)/2
   lrtol = log(rtol)
   rx = half
-  ry = iceil(sqrt(-log(rtol/2.0)))
+  ry = ceil(Int,sqrt(-log(rtol/2.0)))
   order = 0
   # numerical prefactor here is determined empirically. Theory says it should be
   # 2, but in practice it appears that a smaller number of terms is sufficient.
@@ -39,13 +39,13 @@ function fastgausstransform(xs, qs, std; rtol=eps(promote_type(eltype(xs), eltyp
   h = convert(T, sqrt(2)*std)
   xmin, xmax = extrema(xs)
   range = xmax - xmin
-  centers = T[xmin:(2*h*rx):xmax+2*h*rx]
+  centers = T.(xmin:(2*h*rx):(xmax+2*h*rx))
   xmin, xmax = extrema(centers)
   range = xmax - xmin
   ncenters = length(centers)
   coefficients = zeros(T, order + 1, ncenters)
   for (x, q) in zip(xs, qs)
-    k = ncenters == 1 ? 1 : 1 + iround((x - xmin)/(2*h*rx))
+    k = ncenters == 1 ? 1 : 1 + round(Int,(x - xmin)/(2*h*rx))
     center = centers[k]
     t = (x-center)/h
     c = q*exp(-t^2)
@@ -66,7 +66,7 @@ function neighborindices(f::FastGaussTransform, x)
   range = centers[end] - centers[1]
   imin = (x-f.ry*f.h-centers[1])/range*(ncenters-1) + 1
   imax = (x+f.ry*f.h-centers[1])/range*(ncenters-1) + 1
-  return max(ifloor(imin), 1):min(iceil(imax), ncenters)
+  return max(floor(Int,imin), 1):min(ceil(Int,imax), ncenters)
 end
 
 function evaluate{T}(f::FastGaussTransform{T}, x)
@@ -76,8 +76,7 @@ function evaluate{T}(f::FastGaussTransform{T}, x)
     t = (x - center)/f.h
     s = f.coefficients[end, k]
     # Horner's method
-    for n in size(f.coefficients,1)-1:-1:1
-      s = f.coefficients[n, k] + t*s
+    for n in size(f.coefficients,1)-1:-1:1 s = f.coefficients[n, k] + t*s
     end
     g += exp(-t^2)*s
   end

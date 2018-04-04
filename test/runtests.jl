@@ -10,9 +10,9 @@ function maxerror(T)
   m = zero(T)
   for xp in linspace(convert(T, -10), convert(T, 10), 1000)
    points = [zero(T), convert(T, 2), xp]
-   values = ones(T, size(points))
-   f = fastgausstransform(points, values, convert(T, 0.5))
-   s = slowgausstransform(points, values, convert(T, 0.5))
+   vals = ones(T, size(points))
+   f = fastgausstransform(points, vals, convert(T, 0.5))
+   s = slowgausstransform(points, vals, convert(T, 0.5))
    for x in linspace(convert(T, -10), convert(T, 10), 10000)
      delta = abs(evaluate(f, x) - evaluate(s, x))
      m = max(m, delta)
@@ -20,6 +20,7 @@ function maxerror(T)
   end
   return m
 end
+
 
 # Factor of 4 is from 3 particles, rounded to nearest power of 2 for rounding error
 @test maxerror(Float64) <= 4*eps(Float64)

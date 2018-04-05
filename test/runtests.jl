@@ -11,10 +11,10 @@ function maxerror(T)
   for xp in linspace(convert(T, -10), convert(T, 10), 1000)
    points = [zero(T), convert(T, 2), xp]
    vals = ones(T, size(points))
-   f = fastgausstransform(points, vals, convert(T, 0.5))
-   s = slowgausstransform(points, vals, convert(T, 0.5))
+   f = FastGaussTransform(points, vals, convert(T, 0.5))
+   s = SlowGaussTransform(points, vals, convert(T, 0.5))
    for x in linspace(convert(T, -10), convert(T, 10), 10000)
-     delta = abs(evaluate(f, x) - evaluate(s, x))
+     delta = abs(f(x) - s(x))
      m = max(m, delta)
    end
   end

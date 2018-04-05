@@ -1,6 +1,6 @@
 module FastGaussTransforms
 
-export fastgausstransform, slowgausstransform, evaluate
+export FastGaussTransform, SlowGaussTransform
 
 struct FastGaussTransform{T<:Real}
   centers::Vector{T} # In general, an array of points
@@ -33,7 +33,7 @@ function errorconstants(rtol)
   return rx, ry, order
 end
 
-function fastgausstransform(xs, qs, std; rtol=eps(promote_type(eltype(xs), eltype(qs))))
+function FastGaussTransform(xs, qs, std; rtol=eps(promote_type(eltype(xs), eltype(qs))))
   T = promote_type(eltype(xs), eltype(qs))
   rx, ry, order = errorconstants(rtol)
   h = convert(T, sqrt(2)*std)
@@ -69,7 +69,8 @@ function neighborindices(f::FastGaussTransform, x)
   return max(floor(Int,imin), 1):min(ceil(Int,imax), ncenters)
 end
 
-function evaluate{T}(f::FastGaussTransform{T}, x)
+
+function (f::FastGaussTransform{T})(x) where T<:Real
   g = zero(T)
   for k in neighborindices(f, x)
     center = f.centers[k]
@@ -80,7 +81,7 @@ function evaluate{T}(f::FastGaussTransform{T}, x)
     end
     g += exp(-t^2)*s
   end
-  return g
+return g
 end
 
 # Dummy type used for comparison that just stores points directly,
@@ -89,14 +90,17 @@ type SlowGaussTransform{T<:Real}
   xs::Vector{T}
   qs::Vector{T}
   h::T
+  function SlowGaussTransform{T}(xs::Vector{T},qs::Vector{T},std::T) where T<:Real
+    new(xs, qs, sqrt(2)*std)
+  end
 end
 
-function slowgausstransform(xs, qs, std)
+function SlowGaussTransform(xs, qs, std)
   T = promote_type(eltype(xs), eltype(qs))
-  return SlowGaussTransform(xs, qs, convert(T, sqrt(2)*std))
+  return SlowGaussTransform{T}(xs, qs, convert(T, std))
 end
 
-function evaluate{T}(f::SlowGaussTransform{T}, x)
+function (f::SlowGaussTransform{T})(x) where T<:Real
   g = zero(T)
   for (xp, q) in zip(f.xs, f.qs)
     g += q*exp(-(x-xp)^2/f.h^2)
